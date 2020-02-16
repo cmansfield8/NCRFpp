@@ -33,6 +33,7 @@ sed -i "/'$/ s///g" $FILE
 sed -i '/"/ s///g' $FILE
 sed -i '/\[/ s///g' $FILE
 sed -i '/]/ s///g' $FILE
+sed -i '/[a|b]_/ s///g' $FILE
 
 # a hacky fix because NCRFpp requires label info on decoding
 echo "add labels"

@@ -9,6 +9,9 @@ COLUMN=$3
 sed '/# 1.0000/ d' $INPUT > "${FILE}.tmp"
 cut -d' ' -f2 "${FILE}.tmp" > $FILE
 
+# remove contractions
+sed "/^'/ d" $FILE
+
 # surround tag with apostrophe
 sed -i -E "/^(.)/ s//'\1/g" $FILE
 sed -i -E "/(.)$/ s//\1'/g" $FILE
