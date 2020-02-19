@@ -9,8 +9,8 @@ output = data/logs/swb_decode.$(Process).out
 error = data/logs/swb_decode.$(Process).err
 log = data/logs/swb_decode.$(Process).log
 
-arguments = "swb1/ptb.decode.config"
+arguments = "ptb.decode.config"
 queue
 
-arguments = "swb1/ms.decode.config"
+arguments = "ms.decode.config"
 queue

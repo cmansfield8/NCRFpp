@@ -19,11 +19,10 @@ def get_shape(token, tag, tok_map, tag_map):
         return tok_map[token]
     else:
         try:
-            tag_map[tag]
+            return tag_map[tag]
         except KeyError:
-            print("Tag not found in tag mapper: {}".format(tag))
-            result.append('UNK')
-    return result
+            print("Shape not found for tag: {}".format(tag))
+    return 'UNK'
 	
 def read_mapper(file):
     reader = csv.reader(open(file, 'r'), delimiter='\t')
@@ -33,38 +32,36 @@ def read_mapper(file):
     return result
 
 
-def main(file, tagshapes, tokenshapes, output):
-	tok_map = read_mapper(tokenshapes)
-	tag_map = read_mapper(tagshapes)
+def main(args):
+	tok_map = read_mapper("tokenshapes.tsv")
+	tag_map = read_mapper("tagshapes.tsv")
 	
 	sentences = list()
 	temp = list()
 
-	reader = csv.reader(open(file, 'r', delimiter='\t')
+	reader = csv.reader(open(args.file, 'r'), delimiter=' ')
 	for row in reader:
-		if row[0].startswith("#"):
-			# skip scores from the model
-			continue
-		elif row[0].startswith("\'"):
-			#skip contractions 
-			continue
-		elif len(row) == 0: # empty line?
-			sentences.append(list(zip(*temp)))
+		if not row: # start a new sentence
+			sentences.append(list(map(list, zip(*temp))))
 			temp = list()
+		elif row[0].startswith("\'"): # skip contractions
+			continue
+		elif row[1].startswith("1.0000"): # SOS
+			continue
 		else:
-			shape = get_shape(row[0], row[1])
+			shape = get_shape(row[0], row[1], tok_map, tag_map)
 			temp.append((row[1], shape))
 	
-	output = file[:-4] + "_post" + file[-4:]
-	writer = csv.writer(open(output, 'w', delimiter='\t')
-	for line in sentences:
-		writer.writerow(line)
+	writer = csv.writer(open(args.output, 'w'), delimiter='\t')
+	writer.writerow([args.prefix+'_tags', args.prefix+'_shapes'])
+	for tags, shapes in sentences:
+		writer.writerow([tags, shapes])
 
 
 if __name__=="__main__":
-    parser = argparse.ArgumentParser()
-	parser.add_argument("file", help="Output file from NCRFpp")
-    parser.add_argument("tagshapes", help="List of tags with lexical class labels")
-	parser.add_argument("tokenshapes", help="List of words with lexical class labels")
-    args = parser.parse_args()
-    main(args.file, args.tagshapes, args.wordshapes)
+	parser = argparse.ArgumentParser()
+	parser.add_argument("file", help="File decoded from NCRFpp")
+	parser.add_argument("output", help="Output file name")
+	parser.add_argument("prefix", help="Prefix of the header")
+	args = parser.parse_args()
+	main(args)
