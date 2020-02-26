@@ -6,9 +6,11 @@ Author: coman8@uw.edu
 
 This script takes the switchboard file and does preprocessing so it can be read by NCRFpp.
 
-1. Empty sentences are converted to "#" so we don't lose track when they need to be zipped back in to the alignment file.
-2. Sentences are printed word by word with a newline inbetween.
-3. Label is added to column 2 (required by NCRFpp decoder).
+- Sentences are printed word by word with a newline inbetween.
+- Label is added to column 2 (required by NCRFpp decoder).
+- Empty sentences are converted to "#" so we don't lose track when they need to be zipped back in to the alignment file.
+- Special characters "//", "--" are removed
+- "a_", "b_" prefix remove
 
 """
 
@@ -19,17 +21,33 @@ from ast import literal_eval
 import pandas as pd
 
 
+def process_token(token):
+	if token.startswith(('a_', 'b_')):
+		return token[2:]
+	return token
+	
+
+def is_empty(sent):
+	return not sent or all([is_special(x) for x in sent])
+
+
+def is_special(token):
+	return token == '//' or token.startswith('--')
+
+
 def write_file(sentences, output, label):
 	sentences = [literal_eval(x) for x in sentences]
 	writer = csv.writer(open(output, 'w'), delimiter='\t', lineterminator="\n")
 	for sent in sentences:
-		if not sent:
+		if is_empty(sent):
 			writer.writerow(["#", label])
 		else:
 			for token in sent:
-				writer.writerow([token, label])
+				if not is_special(token):
+					writer.writerow([process_token(token), label])
 		writer.writerow("")
 		
+
 def main(args):
 	LABEL = 'SYM'
 	
