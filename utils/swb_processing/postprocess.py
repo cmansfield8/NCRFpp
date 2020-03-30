@@ -4,16 +4,16 @@
 """
 Author: coman8@uw.edu
 
-This script takes the NCRFpp output and postprocesses for error analysis.
+This script takes the NCRFpp output and incorporates into alignment file.
 
-- Ignores certain token/POS to match LM scores
 - Adds function/content/other categories to POS tags
-- Outputs 1 sentence per line
-- Empty lines have empty tags
+- Empty lines have [None] tags
+
 """
 
 import argparse
 import csv
+import pandas as pd
 
 
 def get_shape(token, tag, tok_map, tag_map):
@@ -36,18 +36,8 @@ def read_mapper(file):
 	return result
 	
 	
-def special_token(current, previous):
-	"""checks for conditions for ignoring token and pos"""
-	if current[0].startswith("\'") or current[0].startswith("n\'t"): 
-		# skip contractions
-		return True
-	# elif current[0] == "not" and previous and previous[0] == "can":
-		# can not is treated as 1 word
-		# return True
-	# elif current[0] == "to" and previous and previous[0] in ["going", "want"]:
-		# gonna and wanna
-		# return True
-	elif current[1].startswith("1.0000"): 
+def skip_token(current, previous):
+	if current[1].startswith("1.0000"): 
 		# SOS
 		return True
 	return False
@@ -70,11 +60,15 @@ def main(args):
 			sentences.append(list(map(list, zip(*temp))))
 			temp = list()
 			previous = None
-		elif special_token(current, previous): # skip these tokens
+		elif skip_token(current, previous): # skip these tokens
 			continue
 		else:
 			if current[0] == '#':  # empty sentence case
 				temp.append((None, None))
+			elif current[0] == "know" and previous and previous[0] == "you":  # you_know
+				temp.pop()
+				temp.append(('UH', '2'))
+				temp.append(('UH', '2'))
 			else:
 				shape = get_shape(current[0], current[1], tok_map, tag_map)
 				temp.append((current[1], shape))
@@ -91,7 +85,7 @@ def main(args):
 
 if __name__=="__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument("file", help="File decoded from NCRFpp")
+	parser.add_argument("file", help="Out file decoded from NCRFpp")
 	parser.add_argument("output", help="Output file name")
 	parser.add_argument("prefix", help="Prefix of the header")
 	args = parser.parse_args()
